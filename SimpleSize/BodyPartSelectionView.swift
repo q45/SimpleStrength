@@ -15,10 +15,10 @@ struct BodyPartSelectionView: View {
                     NavigationLink(destination: ExerciseListView(bodyPart: bodyPart.name)) {
                         HStack {
                             Image(systemName: bodyPart.systemImage)
-                                .foregroundColor(.accentColor)
+                                .foregroundColor(.blue)
                                 .frame(width: 30, height: 30)
                             Text(bodyPart.name)
-                                .font(.headline)
+                                .font(.system(size: 20, weight: .bold, design: .default))
                         }
                         .padding(.vertical, 8)
                     }

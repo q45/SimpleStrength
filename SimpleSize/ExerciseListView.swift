@@ -62,7 +62,7 @@ struct ExerciseListView: View {
                                 .foregroundColor(.blue)
                             
                             Text("Add Exercise")
-                                .font(.headline)
+                                .font(.system(size: 18, weight: .bold, design: .default))
                                 .foregroundColor(.blue)
                         }
                         .frame(maxWidth: .infinity)
@@ -86,12 +86,11 @@ struct ExerciseListView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.title2)
+                            .font(.system(size: 24, weight: .semibold, design: .default))
                             .foregroundColor(.green)
                         
                         Text("\(bodyPart) Summary")
-                            .font(.title3)
-                            .fontWeight(.bold)
+                            .font(.system(size: 20, weight: .bold, design: .default))
                     }
                     
                     VStack(spacing: 12) {
@@ -214,8 +213,8 @@ struct ExerciseRowView: View {
                 return [.blue, .blue.opacity(0.7)]
             }
         } else {
-            // Gray gradient for not started
-            return [.gray, .gray.opacity(0.6)]
+            // Black gradient for not started
+            return [.black, .black.opacity(0.6)]
         }
     }
     
@@ -275,11 +274,11 @@ struct ExerciseRowView: View {
                     // Show progress with number of sets
                     VStack(spacing: 2) {
                         Text("\(exercise.totalSets)")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .font(.system(size: 18, weight: .heavy, design: .default))
                             .foregroundColor(.white)
                         
                         Text("sets")
-                            .font(.system(size: 8, weight: .medium))
+                            .font(.system(size: 10, weight: .semibold, design: .default))
                             .foregroundColor(.white.opacity(0.8))
                     }
                 } else {
@@ -305,11 +304,11 @@ struct ExerciseRowView: View {
             // Exercise details
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
-                    .font(.headline)
+                    .font(.system(size: 20, weight: .bold, design: .default))
                     .foregroundColor(.primary)
                 
                 Text(workoutSummary)
-                    .font(.subheadline)
+                    .font(.system(size: 16, weight: .medium, design: .default))
                     .foregroundColor(.secondary)
                 
                 if exercise.totalSets > 0 {
@@ -319,7 +318,7 @@ struct ExerciseRowView: View {
                             .foregroundColor(.green)
                         
                         Text(lastWorkoutText)
-                            .font(.caption)
+                            .font(.system(size: 12, weight: .medium, design: .default))
                             .foregroundColor(.green)
                         
                         HStack(spacing: 2) {

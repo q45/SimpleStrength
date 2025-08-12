@@ -14,7 +14,7 @@ struct WorkoutSummaryView: View {
     @Query private var workoutSets: [WorkoutSet]
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Workout Progress Card
@@ -23,8 +23,7 @@ struct WorkoutSummaryView: View {
                     // Body Part Selection
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Choose Body Part")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 24, weight: .heavy, design: .default))
                             .padding(.horizontal)
                         
                         VStack(spacing: 12) {
@@ -88,8 +87,7 @@ struct WorkoutProgressCard: View {
                     .foregroundColor(.yellow)
                 
                 Text("Workout Progress")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.system(size: 24, weight: .heavy, design: .default))
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -107,12 +105,12 @@ struct WorkoutProgressCard: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("\(totalSets) total sets completed")
-                    .font(.headline)
+                    .font(.system(size: 20, weight: .bold, design: .default))
                     .foregroundColor(.white)
                 
                 if !mostTrainedBodyPart.isEmpty && mostTrainedBodyPart != "None" {
                     Text("Most trained: \(mostTrainedBodyPart)")
-                        .font(.subheadline)
+                        .font(.system(size: 16, weight: .semibold, design: .default))
                         .foregroundColor(.white.opacity(0.9))
                 }
             }
@@ -120,13 +118,13 @@ struct WorkoutProgressCard: View {
         .padding(20)
         .background(
             LinearGradient(
-                colors: [Color.purple, Color.purple.opacity(0.8)],
+                colors: [Color.blue, Color.blue.opacity(0.8)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
         .cornerRadius(20)
-        .shadow(color: .purple.opacity(0.3), radius: 12, x: 0, y: 6)
+        .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
         .padding(.horizontal)
     }
 }
@@ -166,22 +164,22 @@ struct BodyPartRow: View {
                 // Body part details
                 VStack(alignment: .leading, spacing: 4) {
                     Text(bodyPart.name)
-                        .font(.headline)
+                        .font(.system(size: 20, weight: .bold, design: .default))
                         .foregroundColor(.primary)
                     
                     HStack(spacing: 8) {
                         Text("\(exercises.count) exercises")
-                            .font(.subheadline)
+                            .font(.system(size: 16, weight: .medium, design: .default))
                             .foregroundColor(.secondary)
                         
                         if hasRecentActivity {
                             Text("\(setsDoneToday) sets done")
-                                .font(.subheadline)
+                                .font(.system(size: 16, weight: .semibold, design: .default))
                                 .foregroundColor(.green)
                             
                             HStack(spacing: 4) {
                                 Text("Today")
-                                    .font(.caption)
+                                    .font(.system(size: 12, weight: .medium, design: .default))
                                     .foregroundColor(.green)
                                 
                                 Circle()
@@ -210,10 +208,10 @@ struct BodyPartRow: View {
         switch bodyPart.name {
         case "Chest": return .red
         case "Back": return .blue
-        case "Shoulders": return .orange
-        case "Arms": return .purple
+        case "Shoulders": return .blue
+        case "Arms": return .blue
         case "Legs": return .green
-        case "Core": return .yellow
+        case "Core": return .green
         default: return .gray
         }
     }
@@ -232,12 +230,11 @@ struct SummaryCard: View {
                 .foregroundColor(color)
             
             Text(value)
-                .font(.title)
-                .fontWeight(.bold)
+                .font(.system(size: 28, weight: .heavy, design: .default))
                 .foregroundColor(.primary)
             
             Text(title)
-                .font(.caption)
+                .font(.system(size: 12, weight: .medium, design: .default))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)

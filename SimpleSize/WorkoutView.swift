@@ -39,7 +39,7 @@ struct WorkoutView: View {
                 // Header with exercise name
                 VStack(spacing: 16) {
                     Text(exercise.name)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 36, weight: .heavy, design: .default))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                         .padding(.top, 20)
@@ -80,7 +80,7 @@ struct WorkoutView: View {
                         // Weight Input
                         VStack(spacing: 12) {
                             Text("Weight")
-                                .font(.headline)
+                                .font(.system(size: 18, weight: .semibold, design: .default))
                                 .foregroundColor(.secondary)
                             
                             ZStack {
@@ -89,17 +89,16 @@ struct WorkoutView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                                 
                                 HStack(spacing: 8) {
-                                    TextField("0", text: $currentWeight)
-                                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                                        .keyboardType(.numberPad)
-                                        .multilineTextAlignment(.center)
-                                        .focused($isWeightFocused)
-                                        .foregroundColor(.primary)
+                                                                    TextField("0", text: $currentWeight)
+                                    .font(.system(size: 42, weight: .heavy, design: .default))
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.center)
+                                    .focused($isWeightFocused)
+                                    .foregroundColor(.primary)
                                     
                                     Text("lbs")
-                                        .font(.title2)
+                                        .font(.system(size: 20, weight: .semibold, design: .default))
                                         .foregroundColor(.secondary)
-                                        .fontWeight(.medium)
                                 }
                                 .padding(.horizontal, 20)
                             }
@@ -110,7 +109,7 @@ struct WorkoutView: View {
                         // Reps Input
                         VStack(spacing: 12) {
                             Text("Reps")
-                                .font(.headline)
+                                .font(.system(size: 18, weight: .semibold, design: .default))
                                 .foregroundColor(.secondary)
                             
                             ZStack {
@@ -119,7 +118,7 @@ struct WorkoutView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                                 
                                 TextField("0", text: $currentReps)
-                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .font(.system(size: 42, weight: .heavy, design: .default))
                                     .keyboardType(.numberPad)
                                     .multilineTextAlignment(.center)
                                     .focused($isRepsFocused)
@@ -138,21 +137,20 @@ struct WorkoutView: View {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title2)
                             Text("Add Set")
-                                .font(.title2)
-                                .fontWeight(.semibold)
+                                .font(.system(size: 20, weight: .bold, design: .default))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
                         .background(
                             LinearGradient(
-                                colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+                                colors: [Color.blue, Color.blue.opacity(0.8)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
                         .cornerRadius(28)
-                        .shadow(color: .accentColor.opacity(0.3), radius: 12, x: 0, y: 6)
+                        .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
                     }
                     .disabled(currentWeight.isEmpty || currentReps.isEmpty)
                     .padding(.horizontal)
@@ -163,17 +161,15 @@ struct WorkoutView: View {
                              Button(action: { isSetsExpanded.toggle() }) {
                                  HStack {
                                      Text("Today's Sets")
-                                         .font(.title3)
-                                         .fontWeight(.semibold)
+                                         .font(.system(size: 20, weight: .bold, design: .default))
                                          .foregroundColor(.primary)
                                      
                                      Spacer()
                                      
                                      HStack(spacing: 6) {
                                          Text("\(todaysSets.count)")
-                                             .font(.title3)
-                                             .fontWeight(.bold)
-                                             .foregroundColor(.accentColor)
+                                             .font(.system(size: 20, weight: .heavy, design: .default))
+                                             .foregroundColor(.blue)
                                          
                                          Image(systemName: isSetsExpanded ? "chevron.up" : "chevron.down")
                                              .font(.caption)
@@ -218,8 +214,7 @@ struct WorkoutView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.title2)
                             Text("Finish Exercise")
-                                .font(.title2)
-                                .fontWeight(.semibold)
+                                .font(.system(size: 20, weight: .bold, design: .default))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -259,27 +254,38 @@ struct WorkoutView: View {
               let reps = Int(currentReps) else { return }
         
         let workoutSet = WorkoutSet(weight: weight, reps: reps, exercise: exercise)
+        
+        // Establish the relationship properly
+        exercise.workoutSets.append(workoutSet)
+        
+        // Insert the workout set into the context
         modelContext.insert(workoutSet)
+        
+        // Update local state immediately
+        todaysSets.append(workoutSet)
+        todaysSets.sort { $0.timestamp < $1.timestamp }
         
         // Clear input fields
         currentWeight = ""
         currentReps = ""
         
         // Auto-focus weight field for next set
-        isWeightFocused = true
+        DispatchQueue.main.async {
+            self.isWeightFocused = true
+        }
         
-        // Update local state immediately instead of reloading
-        let today = Calendar.current.startOfDay(for: Date())
-        
-        // Add the new set to todaysSets immediately
-        todaysSets.append(workoutSet)
-        todaysSets.sort { $0.timestamp < $1.timestamp }
-        
-        // Try to save the context
+        // Save the context
         do {
             try modelContext.save()
         } catch {
             print("Error saving context: \(error)")
+            // Remove from local state if save failed
+            if let index = todaysSets.firstIndex(where: { $0.id == workoutSet.id }) {
+                todaysSets.remove(at: index)
+            }
+            if let index = exercise.workoutSets.firstIndex(where: { $0.id == workoutSet.id }) {
+                exercise.workoutSets.remove(at: index)
+            }
         }
     }
     
@@ -321,12 +327,11 @@ struct StatCard: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: 24, weight: .heavy, design: .default))
                 .foregroundColor(color)
             
             Text(title)
-                .font(.caption)
+                .font(.system(size: 12, weight: .medium, design: .default))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -344,27 +349,25 @@ struct SetRowView: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Set number badge
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.1))
-                    .frame(width: 32, height: 32)
-                
-                Text("\(setNumber)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.accentColor)
-            }
+                            // Set number badge
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                                    Text("\(setNumber)")
+                    .font(.system(size: 14, weight: .bold, design: .default))
+                    .foregroundColor(.blue)
+                }
             
             // Set details
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(Int(weight)) lbs × \(reps) reps")
-                    .font(.body)
-                    .fontWeight(.medium)
+                    .font(.system(size: 16, weight: .semibold, design: .default))
                     .foregroundColor(.primary)
                 
                 Text("Set \(setNumber)")
-                    .font(.caption)
+                    .font(.system(size: 12, weight: .medium, design: .default))
                     .foregroundColor(.secondary)
             }
             
@@ -372,9 +375,8 @@ struct SetRowView: View {
             
             // Weight indicator
             Text("\(Int(weight))")
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(.accentColor)
+                .font(.system(size: 20, weight: .heavy, design: .default))
+                .foregroundColor(.blue)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
