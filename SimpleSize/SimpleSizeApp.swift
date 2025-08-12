@@ -8,6 +8,15 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Keyboard Management Extension
+extension View {
+    func hideKeyboard() {
+        DispatchQueue.main.async {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+    }
+}
+
 @main
 struct SimpleSizeApp: App {
     var sharedModelContainer: ModelContainer = {
@@ -15,12 +24,27 @@ struct SimpleSizeApp: App {
             Exercise.self,
             WorkoutSet.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        // More robust configuration with better error handling
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            allowsSave: true,
+            cloudKitDatabase: .none
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("⚠️ SwiftData initialization error: \(error)")
+            
+            // Fallback to in-memory storage if persistent storage fails
+            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallbackConfig])
+            } catch {
+                fatalError("Critical: Could not create any ModelContainer: \(error)")
+            }
         }
     }()
 

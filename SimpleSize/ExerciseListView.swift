@@ -11,8 +11,13 @@ import SwiftData
 struct ExerciseListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var exercises: [Exercise]
+    
+    private var filteredExercises: [Exercise] {
+        exercises.filter { $0.bodyPart == bodyPart }
+    }
     @State private var showingAddExercise = false
     @State private var newExerciseName = ""
+    @State private var workoutViewExercise: Exercise?
     
     let bodyPart: String
     
@@ -23,42 +28,114 @@ struct ExerciseListView: View {
         })
     }
     
+    private var workoutViewBinding: Binding<Bool> {
+        Binding(
+            get: { workoutViewExercise != nil },
+            set: { if !$0 { workoutViewExercise = nil } }
+        )
+    }
+    
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 20) {
+                // Clean header with exercise count only
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("\(filteredExercises.count) Exercises")
+                            .font(.system(size: 18, weight: .semibold, design: .default))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button(action: { showingAddExercise = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("Add Exercise")
+                                    .font(.system(size: 16, weight: .semibold, design: .default))
+                            }
+                            .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                
                 // Exercise List
-                VStack(spacing: 0) {
-                    ForEach(exercises) { exercise in
-                        HStack {
-                            NavigationLink(destination: WorkoutView(exercise: exercise)) {
+                VStack(spacing: 12) {
+                    ForEach(filteredExercises) { exercise in
+                        HStack(spacing: 0) {
+                            Button(action: {
+                                print("🔄 Exercise button tapped: \(exercise.name)")
+                                print("🔄 Exercise ID: \(exercise.id)")
+                                print("🔄 Exercise bodyPart: \(exercise.bodyPart)")
+                                print("🔄 Exercise name length: \(exercise.name.count)")
+                                print("🔄 Exercise name raw: '\(exercise.name)'")
+                                print("🔄 Exercise isCustom: \(exercise.isCustom)")
+                                print("🔄 Exercise totalSets: \(exercise.totalSets)")
+                                print("🔄 Exercise workoutSets count: \(exercise.workoutSets.count)")
+                                
+                                // Check if exercise name is empty and try to fix it
+                                if exercise.name.isEmpty {
+                                    print("⚠️ WARNING: Exercise name is empty! Attempting to fix...")
+                                    if !exercise.bodyPart.isEmpty {
+                                        let defaultNames = getDefaultExercises(for: exercise.bodyPart)
+                                        if let firstDefault = defaultNames.first {
+                                            exercise.name = firstDefault
+                                            print("🔧 Fixed exercise name to: \(firstDefault)")
+                                            
+                                            do {
+                                                try modelContext.save()
+                                                print("✅ Successfully saved fixed exercise name")
+                                            } catch {
+                                                print("❌ Error saving fixed exercise name: \(error)")
+                                                modelContext.rollback()
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Set the selected exercise first
+                                workoutViewExercise = exercise
+                                print("🔄 workoutViewExercise set to: \(workoutViewExercise?.name ?? "nil")")
+                                
+                                // Debug: Check state after setting
+                                DispatchQueue.main.async {
+                                    print("🔄 After state update - workoutViewExercise: \(workoutViewExercise?.name ?? "nil")")
+                                }
+                            }) {
                                 ExerciseRowView(exercise: exercise, bodyPart: bodyPart)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            // Delete button
+                            // Delete button with better styling
                             Button(action: {
                                 withAnimation {
-                                    modelContext.delete(exercise)
+                                    deleteExercise(offsets: IndexSet(integer: filteredExercises.firstIndex(of: exercise)!))
                                 }
                             }) {
                                 Image(systemName: "trash")
-                                    .font(.title3)
+                                    .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.red)
-                                    .padding(.horizontal, 12)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(22)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        
-                        if exercise.id != exercises.last?.id {
-                            Divider()
-                                .padding(.horizontal)
-                        }
+                        .background(Color(.systemBackground))
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                        .padding(.horizontal, 20)
                     }
                     
-                    // Add Exercise Button
+                    // Add Exercise Button with better styling
                     Button(action: { showingAddExercise = true }) {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title2)
+                                .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.blue)
                             
                             Text("Add Exercise")
@@ -66,58 +143,55 @@ struct ExerciseListView: View {
                                 .foregroundColor(.blue)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                        .padding(.vertical, 20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.blue.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.blue.opacity(0.2), lineWidth: 1.5)
+                                )
                         )
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                     .padding(.top, 8)
                 }
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
                 
-                // Body Part Summary
-                VStack(alignment: .leading, spacing: 16) {
+                // Body Part Summary with better styling
+                VStack(alignment: .leading, spacing: 18) {
                     HStack {
                         Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 24, weight: .semibold, design: .default))
+                            .font(.system(size: 22, weight: .semibold, design: .default))
                             .foregroundColor(.green)
                         
                         Text("\(bodyPart) Summary")
                             .font(.system(size: 20, weight: .bold, design: .default))
                     }
+                    .padding(.horizontal, 24)
                     
-                    VStack(spacing: 12) {
-                        SummaryRow(title: "Total Sets", value: "\(exercises.reduce(0) { $0 + $1.totalSets })")
-                        SummaryRow(title: "Exercises Completed", value: "\(exercises.filter { $0.totalSets > 0 }.count)")
+                    VStack(spacing: 16) {
+                        SummaryRow(title: "Total Sets", value: "\(filteredExercises.reduce(0) { $0 + $1.totalSets })")
+                        SummaryRow(title: "Exercises Completed", value: "\(filteredExercises.filter { $0.totalSets > 0 }.count)")
                         
-                        if let lastWorkout = exercises.compactMap({ $0.lastWorkoutDate }).max() {
+                        if let lastWorkout = filteredExercises.compactMap({ $0.lastWorkoutDate }).max() {
                             SummaryRow(title: "Last Workout", value: formatDate(lastWorkout))
                         }
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+                    )
+                    .padding(.horizontal, 20)
                 }
-                .padding(20)
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-                .padding(.horizontal)
             }
-            .padding(.vertical)
+            .padding(.vertical, 20)
         }
         .navigationTitle(bodyPart)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Add Exercise") {
-                    showingAddExercise = true
-                }
-            }
-        }
+        .navigationBarTitleDisplayMode(.large)
         .alert("Add Exercise", isPresented: $showingAddExercise) {
             TextField("Exercise Name", text: $newExerciseName)
             Button("Add") {
@@ -128,35 +202,151 @@ struct ExerciseListView: View {
             Text("Enter the name of the new exercise")
         }
         .onAppear {
-            loadDefaultExercises()
+            print("🔄 ExerciseListView appeared for \(bodyPart)")
+            
+            // Prevent multiple calls that could cause loops
+            DispatchQueue.main.async {
+                if filteredExercises.isEmpty {
+                    print("📝 Loading default exercises for \(bodyPart)")
+                    loadDefaultExercises()
+                } else {
+                    print("📊 Found \(filteredExercises.count) existing exercises for \(bodyPart)")
+                }
+            }
         }
+        .fullScreenCover(isPresented: workoutViewBinding, onDismiss: {
+            workoutViewExercise = nil
+        }, content: {
+            VStack {
+                if let exercise = workoutViewExercise {
+                    NavigationStack {
+                        WorkoutView(exercise: exercise)
+                            .environment(\.modelContext, modelContext)
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
+                    .onAppear {
+                        print("🔄 Opening WorkoutView for exercise: \(exercise.name)")
+                        print("🔄 Exercise ID: \(exercise.id)")
+                        print("🔄 Exercise bodyPart: \(exercise.bodyPart)")
+                        print("🔄 Exercise name length: \(exercise.name.count)")
+                        print("🔄 Exercise name raw: '\(exercise.name)'")
+                        print("🔄 Exercise isCustom: \(exercise.isCustom)")
+                        print("🔄 Exercise totalSets: \(exercise.totalSets)")
+                        print("🔄 Exercise workoutSets count: \(exercise.workoutSets.count)")
+                    }
+                } else {
+                    VStack(spacing: 20) {
+                        Text("No exercise selected")
+                            .font(.title2)
+                            .foregroundColor(.red)
+                        
+                        Text("workoutViewExercise is nil")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button("Close") {
+                            workoutViewExercise = nil
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .onAppear {
+                        print("❌ workoutViewExercise is nil!")
+                        print("❌ workoutViewExercise value: \(workoutViewExercise?.name ?? "nil")")
+                    }
+                }
+            }
+        })
     }
     
     private func addExercise() {
-        guard !newExerciseName.isEmpty else { return }
+        guard !newExerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
-        let exercise = Exercise(name: newExerciseName, bodyPart: bodyPart, isCustom: true)
-        modelContext.insert(exercise)
-        newExerciseName = ""
+        let exercise = Exercise(
+            name: newExerciseName.trimmingCharacters(in: .whitespacesAndNewlines),
+            bodyPart: bodyPart,
+            isCustom: true
+        )
+        
+        do {
+            modelContext.insert(exercise)
+            try modelContext.save()
+            print("✅ Successfully added custom exercise: \(exercise.name)")
+            
+            newExerciseName = ""
+            showingAddExercise = false
+            
+        } catch {
+            print("❌ Error adding exercise: \(error)")
+            // Rollback if save fails
+            modelContext.rollback()
+        }
     }
     
     private func deleteExercise(offsets: IndexSet) {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(exercises[index])
+            do {
+                for index in offsets {
+                    let exerciseToDelete = filteredExercises[index]
+                    modelContext.delete(exerciseToDelete)
+                    print("🗑️ Marked for deletion: \(exerciseToDelete.name)")
+                }
+                
+                try modelContext.save()
+                print("💾 Successfully saved deletions")
+                
+            } catch {
+                print("❌ Error deleting exercises: \(error)")
+                // Rollback if save fails
+                modelContext.rollback()
             }
         }
     }
     
     private func loadDefaultExercises() {
-        let defaultExercises = getDefaultExercises(for: bodyPart)
+        guard filteredExercises.isEmpty else { return }
         
-        for exerciseName in defaultExercises {
-            let existingExercise = exercises.first { $0.name == exerciseName && !$0.isCustom }
-            if existingExercise == nil {
+        print("🔄 Loading default exercises for \(bodyPart)")
+        
+        // First, clean up any existing exercises with empty names
+        cleanupEmptyExerciseNames()
+        
+        let defaultExerciseNames = getDefaultExercises(for: bodyPart)
+        
+        do {
+            for exerciseName in defaultExerciseNames {
                 let exercise = Exercise(name: exerciseName, bodyPart: bodyPart)
                 modelContext.insert(exercise)
+                print("✅ Inserted: \(exercise.name)")
             }
+            
+            // Save after all insertions
+            try modelContext.save()
+            print("💾 Successfully saved default exercises")
+            
+        } catch {
+            print("❌ Error saving default exercises: \(error)")
+            // Rollback changes if save fails
+            modelContext.rollback()
+        }
+    }
+    
+    private func cleanupEmptyExerciseNames() {
+        let emptyNameExercises = exercises.filter { $0.name.isEmpty }
+        if !emptyNameExercises.isEmpty {
+            print("🧹 Cleaning up \(emptyNameExercises.count) exercises with empty names...")
+            for exercise in emptyNameExercises {
+                print("🧹 Marking for deletion: \(exercise.name)")
+                modelContext.delete(exercise)
+            }
+            do {
+                try modelContext.save()
+                print("💾 Successfully saved deletions of empty name exercises")
+            } catch {
+                print("❌ Error saving deletions of empty name exercises: \(error)")
+                modelContext.rollback()
+            }
+        } else {
+            print("✅ No exercises with empty names found to clean up.")
         }
     }
     
@@ -195,31 +385,13 @@ struct ExerciseRowView: View {
     
     private var exerciseStatusColor: Color {
         if exercise.totalSets > 0 {
-            // Gradient from green to blue based on progress
             return exercise.totalSets >= 10 ? .green : .blue
         } else {
-            // Gray for exercises not started
             return .gray
         }
     }
     
-    private var exerciseStatusGradient: [Color] {
-        if exercise.totalSets > 0 {
-            if exercise.totalSets >= 10 {
-                // Green gradient for high progress
-                return [.green, .green.opacity(0.8)]
-            } else {
-                // Blue gradient for moderate progress
-                return [.blue, .blue.opacity(0.7)]
-            }
-        } else {
-            // Black gradient for not started
-            return [.black, .black.opacity(0.6)]
-        }
-    }
-    
     private var exerciseIcon: String {
-        // Different icons based on exercise type
         let name = exercise.name.lowercased()
         if name.contains("press") || name.contains("push") {
             return "figure.arms.open"
@@ -228,7 +400,7 @@ struct ExerciseRowView: View {
         } else if name.contains("squat") || name.contains("lunge") || name.contains("leg") {
             return "figure.walk"
         } else if name.contains("plank") || name.contains("crunch") || name.contains("core") {
-            return "figure.core.workout"
+            return "figure.core.training"
         } else if name.contains("fly") || name.contains("dip") {
             return "figure.arms.open"
         } else {
@@ -239,17 +411,17 @@ struct ExerciseRowView: View {
     private var lastWorkoutText: String {
         if let lastDate = exercise.lastWorkoutDate {
             let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .short
+            formatter.dateStyle = .short
+            formatter.timeStyle = .none
             return formatter.string(from: lastDate)
         } else {
-            return "No previous workouts"
+            return "No workouts"
         }
     }
     
     private var workoutSummary: String {
         if exercise.totalSets > 0 {
-            return "\(Int(exercise.totalVolume))lbs × \(exercise.totalSets) total sets"
+            return "\(Int(exercise.totalVolume)) lbs • \(exercise.totalSets) sets"
         } else {
             return "No previous workouts"
         }
@@ -257,90 +429,60 @@ struct ExerciseRowView: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Exercise status icon
+            // Status indicator
             ZStack {
-                // Background with gradient
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: exerciseStatusGradient,
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(exerciseStatusColor.opacity(0.15))
                     .frame(width: 48, height: 48)
                 
                 if exercise.totalSets > 0 {
-                    // Show progress with number of sets
-                    VStack(spacing: 2) {
-                        Text("\(exercise.totalSets)")
-                            .font(.system(size: 18, weight: .heavy, design: .default))
-                            .foregroundColor(.white)
-                        
-                        Text("sets")
-                            .font(.system(size: 10, weight: .semibold, design: .default))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
+                    Text("\(exercise.totalSets)")
+                        .font(.system(size: 18, weight: .bold, design: .default))
+                        .foregroundColor(exerciseStatusColor)
                 } else {
-                    // Show exercise type icon for new exercises
                     Image(systemName: exerciseIcon)
                         .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(.gray)
                 }
-                
-                // Progress ring for visual appeal
-                Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                    .frame(width: 48, height: 48)
             }
-            .overlay(
-                // Add a subtle shadow
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: 48, height: 48)
-                    .shadow(color: exerciseStatusColor.opacity(0.4), radius: 6, x: 0, y: 3)
-            )
             
             // Exercise details
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(exercise.name)
-                    .font(.system(size: 20, weight: .bold, design: .default))
+                    .font(.system(size: 18, weight: .semibold, design: .default))
                     .foregroundColor(.primary)
                 
                 Text(workoutSummary)
-                    .font(.system(size: 16, weight: .medium, design: .default))
+                    .font(.system(size: 14, weight: .medium, design: .default))
                     .foregroundColor(.secondary)
                 
                 if exercise.totalSets > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.caption)
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.green)
                         
                         Text(lastWorkoutText)
                             .font(.system(size: 12, weight: .medium, design: .default))
                             .foregroundColor(.green)
-                        
-                        HStack(spacing: 2) {
-                            ForEach(0..<3, id: \.self) { _ in
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 4, height: 4)
-                            }
-                        }
-                        .padding(.leading, 4)
                     }
                 }
             }
             
             Spacer()
             
+            // Navigation arrow
             Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.6))
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        )
     }
 }
 
@@ -349,18 +491,19 @@ struct SummaryRow: View {
     let value: String
     
     var body: some View {
-        HStack {
+        HStack(spacing: 16) {
             Text(title)
-                .font(.subheadline)
+                .font(.system(size: 17, weight: .medium, design: .default))
                 .foregroundColor(.secondary)
             
             Spacer()
             
             Text(value)
-                .font(.subheadline)
-                .fontWeight(.medium)
+                .font(.system(size: 19, weight: .semibold, design: .default))
                 .foregroundColor(.primary)
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
     }
 }
 

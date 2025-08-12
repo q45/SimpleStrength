@@ -40,12 +40,15 @@ struct WorkoutSummaryView: View {
                     
                     // Summary Stats
                     HStack(spacing: 16) {
-                        SummaryCard(
-                            title: "Total Exercises",
-                            value: "\(exercises.count)",
-                            color: .blue,
-                            icon: "dumbbell.fill"
-                        )
+                        NavigationLink(destination: ExerciseBreakdownView()) {
+                            SummaryCard(
+                                title: "Total Exercises",
+                                value: "\(exercises.count)",
+                                color: .blue,
+                                icon: "dumbbell.fill"
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                         
                         SummaryCard(
                             title: "Total Sets",
@@ -58,8 +61,17 @@ struct WorkoutSummaryView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Workout")
-            .background(Color(.systemGroupedBackground))
+                    .navigationTitle("Workout")
+        .background(Color(.systemGroupedBackground))
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 18, weight: .semibold, design: .default))
+                        .foregroundColor(.blue)
+                }
+            }
+        }
         }
     }
 }

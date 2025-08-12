@@ -58,8 +58,8 @@ struct BodyPart {
         BodyPart(name: "Chest", systemImage: "figure.arms.open"),
         BodyPart(name: "Back", systemImage: "figure.walk"),
         BodyPart(name: "Shoulders", systemImage: "figure.arms.open"),
-        BodyPart(name: "Arms", systemImage: "arm.and.wrist"),
+        BodyPart(name: "Arms", systemImage: "figure.strengthtraining.traditional"),
         BodyPart(name: "Legs", systemImage: "figure.walk"),
-        BodyPart(name: "Core", systemImage: "figure.core.workout")
+        BodyPart(name: "Core", systemImage: "figure.core.training")
     ]
 }
